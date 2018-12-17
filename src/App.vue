@@ -4,27 +4,33 @@
       <nav>
         <ul>
           <li class="nav-item">
+            <!-- just seeing some alternative router-view syntax, were binding the the route's name instead -->
+            <!-- of just providing a string that represents the path -->
+            <!-- The exact prop being passed to router-link is so that our .router-link-active class matches exactly -->
+            <!-- router-link also accepts an 'active-class' prop that will override .router-link-active -->
+            <router-link class="nav-link" :to="{name: 'Home'}" exact>
             <img class="logo" src="./assets/build-a-bot-logo.png" />
             Build-A-Bot
+            </router-link>
+          </li>
+          <li class="nav-item">
+            <router-link class="nav-link" :to="{name: 'Build'}" exact>
+            Build
+            </router-link>
           </li>
         </ul>
       </nav>
     </header>
     <main>
-      <RobotBuilder />
+      <router-view />
     </main>
   </div>
 </template>
 
 <script>
-//import HomePage from './home/HomePage.vue';
-import RobotBuilder from './build/RobotBuilder.vue';
 
 export default {
   name: 'app',
-  components: {
-    RobotBuilder,
-  },
 };
 </script>
 <style>
@@ -66,5 +72,13 @@ ul {
 .logo {
   vertical-align: middle;
   height: 30px;
+}
+.nav-link{
+  text-decoration: none;
+  color: inherit;
+}
+/* built in by vue and vue router */
+.router-link-active{
+  color: green;
 }
 </style>
