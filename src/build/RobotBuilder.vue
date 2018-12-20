@@ -1,5 +1,6 @@
 <template>
-<div class="content">
+<!-- v-if below basically says only render this template if async aciton has fired, resolved and computed value is truthy -->
+<div v-if="availableParts" class="content">
   <div class="preview">
     <CollapsibleSection>
       <div class="preview-content">
@@ -50,28 +51,10 @@
         @partSelected="part => selectedRobot.base = part"
       />
     </div>
-    <div>
-      <h1>Cart</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>Robot</th>
-            <th class="cost">Cost</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- again, :key = v-bind:key -->
-          <tr v-for="(robot, index) in cart" :key="index+robot.head.title">
-              <td>{{robot.head.title}}</td>
-              <td class="cost">{{robot.cost}}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
   </div>
 </template>
 <script>
-import availableParts from '../data/parts';
+import {mapActions} from 'vuex';
 import createdHookMixin from './created-hook-mixin';
 import PartSelector from './PartSelector.vue';
 import CollapsibleSection from '../shared/CollapsibleSection.vue';
@@ -79,9 +62,21 @@ export default {
   name: 'RobotBuilder',
   mixins: [createdHookMixin],
   components: {PartSelector, CollapsibleSection},
+  beforeRouteLeave(to, from, next){
+    // At Route Config level these are beforeEnter, beforeLeave. At component level they have 'Route' in them
+    if (this.addedToCart) {
+      next(true)
+    } else {
+      const response = confirm('You have not added your robot to cart, are you sure you want to leave?');
+      next(response);
+    }
+  },
+  created(){
+    this.$store.dispatch('robots/getParts');
+  },
   data(){
     return{
-      availableParts,
+      addedToCart: false,
       cart : [],
       selectedRobot:{
         head: {},
@@ -95,8 +90,15 @@ export default {
     };
   },
   computed: {
+    availableParts(){
+      return this.$store.state.robots.parts;
+    },
   },
   methods: {
+    // An example of how to do both of our direct actions from this component to the robots module using Vuex's mapActions helper
+    // Notice it's in the methods section of component
+    // now in our component we can go from this.$store.dispatch('robots/getParts');  ---> this.getParts();
+   /*  ...mapActions('robots', ['getParts', 'addRobotToCart']), */
     addToCart(){
       const robot = this.selectedRobot;
       const cost = robot.head.cost +
@@ -104,7 +106,14 @@ export default {
         robot.torso.cost +
         robot.rightArm.cost +
         robot.base.cost;
-        this.cart.push(Object.assign({}, robot, { cost }));
+        // How to commit a mutation (Vuex)
+       // this.$store.commit('addRobotToCart', Object.assign({}, robot, {cost}));
+       // Instead of commit (mutation) we will use dispatch (action)
+       // since we namespaced the Vuex store modules, notice the robots/
+        this.$store.dispatch('robots/addRobotToCart', Object.assign({}, robot, {cost}))
+        // able to attach .then because we are returning a promise from action
+        .then(() => this.$router.push('/cart'));
+        this.addedToCart = true;
     },
   },
 };
@@ -222,14 +231,6 @@ content{
   width: 210px;
   padding: 3px;
   font-size: 16px;
-}
-td, th{
-  text-align: left;
-  padding: 5px;
-  padding-right: 20px;
-}
-.cost{
-  text-align: right;
 }
 .sale-border{
   border: 3px solid red;
